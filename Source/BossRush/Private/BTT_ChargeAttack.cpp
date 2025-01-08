@@ -26,7 +26,7 @@ void UBTT_ChargeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	if (!bIsFinished) { return; }
 	if (bCanCharge) { return; }
 
-	ChargeAtPlayer();
+	//ChargeAtPlayer();
 }
 
 
@@ -46,27 +46,31 @@ EBTNodeResult::Type UBTT_ChargeAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 
 	RobotAnim->bIsCharging = true;
 
-	APawn* PlayerRef = Cast<APawn>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
+	
 
-	FVector PlayerLocation = PlayerRef->GetActorLocation();
+	if ( APawn* PlayerRef = Cast<APawn>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor"))); PlayerRef)
+	{
+		FVector PlayerLocation = PlayerRef->GetActorLocation();
 
-	OwnerComp.GetBlackboardComponent()
-		->SetValueAsEnum(
-			TEXT("CurrentState"),
-			static_cast<uint8>(ERobotStates::Charge)
-		);
+		OwnerComp.GetBlackboardComponent()
+			->SetValueAsEnum(
+				TEXT("CurrentState"),
+				static_cast<uint8>(ERobotStates::Charge)
+			);
 
-	FAIMoveRequest MoveRequest{ PlayerLocation };
-	MoveRequest.SetUsePathfinding(true);
-	ControllerRef->MoveTo(MoveRequest);
+		FAIMoveRequest MoveRequest{ PlayerLocation };
+		MoveRequest.SetUsePathfinding(true);
+		ControllerRef->MoveTo(MoveRequest);
 
-	OriginalWalkSpeed = CharacterRef->GetCharacterMovement()->MaxWalkSpeed;
-	CharacterRef->GetCharacterMovement()->MaxWalkSpeed = ChargeAttackSpeed;
+		OriginalWalkSpeed = CharacterRef->GetCharacterMovement()->MaxWalkSpeed;
+		CharacterRef->GetCharacterMovement()->MaxWalkSpeed = ChargeAttackSpeed;
 
-	bIsFinished = false;
-	bCanCharge = false;
+		bIsFinished = false;
+		bCanCharge = false;
 
-	return EBTNodeResult::InProgress;
+		return EBTNodeResult::Succeeded;
+	}
+	return EBTNodeResult::Failed;
 }
 
 void UBTT_ChargeAttack::ChargeAtPlayer()
