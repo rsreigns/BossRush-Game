@@ -7,15 +7,19 @@
 #include "BTT_ChargeAttack.generated.h"
 
 
-UCLASS()
+UCLASS(Blueprintable)
 class BOSSRUSH_API UBTT_ChargeAttack : public UBTTaskNode
 {
 	GENERATED_BODY()
-	
+
+	UPROPERTY()
 	AAIController* ControllerRef;
 
+	
+	UPROPERTY()
 	ACharacter* CharacterRef;
 
+	UPROPERTY()
 	class URobotAnimInstance* RobotAnim;
 
 	FScriptDelegate MoveCompletedDelegate;

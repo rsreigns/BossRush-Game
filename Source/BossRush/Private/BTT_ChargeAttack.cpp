@@ -26,7 +26,6 @@ void UBTT_ChargeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	if (!bIsFinished) { return; }
 	if (bCanCharge) { return; }
 
-	ChargeAtPlayer();
 }
 
 
@@ -34,49 +33,41 @@ EBTNodeResult::Type UBTT_ChargeAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 {
 	ControllerRef = OwnerComp.GetAIOwner();
 	CharacterRef = ControllerRef->GetCharacter();
-	RobotAnim = Cast<URobotAnimInstance>(
-		CharacterRef->GetMesh()->GetAnimInstance()
-	);
+	RobotAnim = Cast<URobotAnimInstance>(CharacterRef->GetMesh()->GetAnimInstance());
 
 
-	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(
-		TEXT("CurrentState"),
-		static_cast<uint8>(ERobotStates::Charge)
-	);
+	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(TEXT("CurrentState"),static_cast<uint8>(ERobotStates::Charge));
 
 	RobotAnim->bIsCharging = true;
 
-	APawn* PlayerRef = Cast<APawn>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
+	if (const APawn* PlayerRef = Cast<APawn>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("Player")));PlayerRef)
+	{
+		const FVector PlayerLocation = PlayerRef->GetActorLocation();
 
-	FVector PlayerLocation = PlayerRef->GetActorLocation();
+		OwnerComp.GetBlackboardComponent()->SetValueAsEnum(TEXT("CurrentState"),static_cast<uint8>(ERobotStates::Charge));
 
-	OwnerComp.GetBlackboardComponent()
-		->SetValueAsEnum(
-			TEXT("CurrentState"),
-			static_cast<uint8>(ERobotStates::Charge)
-		);
+		FAIMoveRequest MoveRequest{ PlayerLocation };
+		MoveRequest.SetUsePathfinding(true);
+		ControllerRef->MoveTo(MoveRequest);
 
-	FAIMoveRequest MoveRequest{ PlayerLocation };
-	MoveRequest.SetUsePathfinding(true);
-	ControllerRef->MoveTo(MoveRequest);
+		OriginalWalkSpeed = CharacterRef->GetCharacterMovement()->MaxWalkSpeed;
+		CharacterRef->GetCharacterMovement()->MaxWalkSpeed = ChargeAttackSpeed;
 
-	OriginalWalkSpeed = CharacterRef->GetCharacterMovement()->MaxWalkSpeed;
-	CharacterRef->GetCharacterMovement()->MaxWalkSpeed = ChargeAttackSpeed;
+		bIsFinished = false;
+		bCanCharge = false;
 
-	bIsFinished = false;
-	bCanCharge = false;
+		return EBTNodeResult::InProgress;
+	}
 
-	return EBTNodeResult::InProgress;
+	return EBTNodeResult::Aborted;
 }
 
 void UBTT_ChargeAttack::ChargeAtPlayer()
 {
 	
-	APawn* PlayerRef{
-		GetWorld()->GetFirstPlayerController()->GetPawn()
-	};
+	APawn* PlayerRef{GetWorld()->GetFirstPlayerController()->GetPawn()};
 
-	FVector PlayerLocation{ PlayerRef->GetActorLocation() };
+	const FVector PlayerLocation{ PlayerRef->GetActorLocation() };
 
 	FAIMoveRequest MoveRequest{ PlayerLocation };
 	MoveRequest.SetUsePathfinding(true);
@@ -86,11 +77,9 @@ void UBTT_ChargeAttack::ChargeAtPlayer()
 
 	ControllerRef->ReceiveMoveCompleted.AddUnique(MoveCompletedDelegate);
 
-	OriginalWalkSpeed = CharacterRef->GetCharacterMovement()
-		->MaxWalkSpeed;
+	OriginalWalkSpeed = CharacterRef->GetCharacterMovement()->MaxWalkSpeed;
 
-	CharacterRef->GetCharacterMovement()
-		->MaxWalkSpeed = ChargeAttackSpeed;
+	CharacterRef->GetCharacterMovement()->MaxWalkSpeed = ChargeAttackSpeed;
 
 
 
